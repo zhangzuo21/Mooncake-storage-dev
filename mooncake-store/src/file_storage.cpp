@@ -340,6 +340,9 @@ tl::expected<bool, ErrorCode> FileStorage::IsEnableOffloading() {
 }
 
 tl::expected<void, ErrorCode> FileStorage::Heartbeat() {
+    LOG(INFO) << "[FileStorage::Heartbeat] START - begin heartbeat cycle";
+    auto heartbeat_start_time = std::chrono::steady_clock::now();
+
     if (client_ == nullptr) {
         LOG(ERROR) << "client is nullptr";
         return tl::make_unexpected(ErrorCode::INVALID_PARAMS);
@@ -359,6 +362,10 @@ tl::expected<void, ErrorCode> FileStorage::Heartbeat() {
         }
     }
 
+    LOG(INFO) << "[FileStorage::Heartbeat] offloading_objects_count="
+              << offloading_objects.size()
+              << ", enable_offloading=" << enable_offloading_;
+
     // === STEP 2: Persist offloaded objects (trigger actual data migration) ===
     auto offload_result = OffloadObjects(offloading_objects);
     if (!offload_result) {
@@ -366,6 +373,13 @@ tl::expected<void, ErrorCode> FileStorage::Heartbeat() {
                    << offload_result.error();
         return offload_result;
     }
+
+    auto heartbeat_end_time = std::chrono::steady_clock::now();
+    auto heartbeat_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 heartbeat_end_time - heartbeat_start_time)
+                                 .count();
+    LOG(INFO) << "[FileStorage::Heartbeat] END - elapsed_time=" << heartbeat_elapsed
+              << "ms, offloaded_objects_count=" << offloading_objects.size();
 
     // TODO(eviction): Implement an LRU eviction mechanism to manage local
     // storage capacity.

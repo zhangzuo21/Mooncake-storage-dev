@@ -2229,6 +2229,15 @@ tl::expected<void, ErrorCode>
 RealClient::batch_get_into_offload_object_internal(
     const std::string &target_rpc_service_addr,
     std::unordered_map<std::string, Slice> &objects) {
+    int64_t total_size = 0;
+    for (const auto &object_it : objects) {
+        total_size += object_it.second.size;
+    }
+    LOG(INFO) << "[batch_get_into_offload_object_internal] START - "
+              << "target_addr=" << target_rpc_service_addr
+              << ", keys_count=" << objects.size()
+              << ", total_size=" << total_size;
+
     auto start_time = std::chrono::steady_clock::now();
     std::vector<std::string> keys;
     std::vector<int64_t> sizes;
@@ -2236,6 +2245,8 @@ RealClient::batch_get_into_offload_object_internal(
         keys.emplace_back(object_it.first);
         sizes.emplace_back(object_it.second.size);
     }
+
+    LOG(INFO) << "[batch_get_into_offload_object_internal] calling RPC batch_get_offload_object";
     auto batchGetResp = client_requester_->batch_get_offload_object(
         target_rpc_service_addr, keys, sizes);
     if (!batchGetResp) {
@@ -2243,6 +2254,11 @@ RealClient::batch_get_into_offload_object_internal(
                    << batchGetResp.error();
         return tl::make_unexpected(batchGetResp.error());
     }
+    LOG(INFO) << "[batch_get_into_offload_object_internal] RPC returned, "
+              << "transfer_engine_addr=" << batchGetResp->transfer_engine_addr
+              << ", pointers_count=" << batchGetResp->pointers.size();
+
+    LOG(INFO) << "[batch_get_into_offload_object_internal] calling BatchGetOffloadObject (transfer data)";
     auto result =
         client_->BatchGetOffloadObject(batchGetResp->transfer_engine_addr, keys,
                                        batchGetResp->pointers, objects);
@@ -2251,11 +2267,11 @@ RealClient::batch_get_into_offload_object_internal(
         std::chrono::duration_cast<std::chrono::milliseconds>(end_time -
                                                               start_time)
             .count());
-    LOG(INFO) << "Time taken for batch_get_into_offload_object_internal: "
-              << elapsed_time
-              << "ms, with target_rpc_service_addr: " << target_rpc_service_addr
-              << ", key size: " << objects.size()
-              << "gc ttl: " << batchGetResp->gc_ttl_ms << "ms.";
+    LOG(INFO) << "[batch_get_into_offload_object_internal] END - "
+              << "elapsed_time=" << elapsed_time << "ms"
+              << ", target_addr=" << target_rpc_service_addr
+              << ", keys_count=" << objects.size()
+              << ", gc_ttl=" << batchGetResp->gc_ttl_ms << "ms";
     if (!result) {
         LOG(ERROR) << "Batch get into offload object failed with error: "
                    << result.error();
