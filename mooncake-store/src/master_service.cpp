@@ -1487,6 +1487,8 @@ auto MasterService::NotifyOffloadSuccess(
     const UUID& client_id, const std::vector<std::string>& keys,
     const std::vector<StorageObjectMetadata>& metadatas)
     -> tl::expected<void, ErrorCode> {
+    LOG(INFO) << "[MasterService::NotifyOffloadSuccess] client_id=" << client_id
+              << ", keys_count=" << keys.size();
     for (size_t i = 0; i < keys.size(); ++i) {
         const auto& key = keys[i];
         const auto& metadata = metadatas[i];

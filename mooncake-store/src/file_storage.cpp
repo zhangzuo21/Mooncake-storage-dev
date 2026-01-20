@@ -198,9 +198,12 @@ tl::expected<void, ErrorCode> FileStorage::Init() {
         }
     }
 
+    LOG(INFO) << "[FileStorage::Init] Starting ScanMeta to restore offloaded objects";
     auto scan_meta_result = storage_backend_->ScanMeta(
         [this](const std::vector<std::string>& keys,
                std::vector<StorageObjectMetadata>& metadatas) {
+            LOG(INFO) << "[FileStorage::Init::ScanMeta] Processing batch, keys_count="
+                      << keys.size();
             for (auto& metadata : metadatas) {
                 metadata.transport_endpoint = local_rpc_addr_;
             }
@@ -211,6 +214,8 @@ tl::expected<void, ErrorCode> FileStorage::Init() {
                            << add_object_result.error();
                 return add_object_result.error();
             }
+            LOG(INFO) << "[FileStorage::Init::ScanMeta] Successfully notified master for "
+                      << keys.size() << " keys";
             return ErrorCode::OK;
         });
 
