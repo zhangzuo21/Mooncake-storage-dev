@@ -168,6 +168,7 @@ tl::expected<void, ErrorCode> RealClient::setup_internal(
     const std::shared_ptr<TransferEngine> &transfer_engine,
     const std::string &ipc_socket_path, int local_rpc_port,
     bool enable_offload) {
+    LOG(INFO) << "local hostname: " << local_hostname;
     this->protocol = protocol;
     this->ipc_socket_path_ = ipc_socket_path;
     const bool should_use_hugepage =
@@ -186,6 +187,7 @@ tl::expected<void, ErrorCode> RealClient::setup_internal(
         // User specified port, no retry needed
         this->local_hostname = local_hostname;
         this->local_rpc_addr = hostname + ":" + std::to_string(local_rpc_port);
+        LOG(INFO) << "local rpc addr: " << this->local_rpc_addr;
         auto client_opt = mooncake::Client::Create(
             this->local_hostname, metadata_server, protocol, device_name,
             master_server_addr, transfer_engine);
@@ -213,8 +215,9 @@ tl::expected<void, ErrorCode> RealClient::setup_internal(
             }
 
             this->local_hostname = hostname + ":" + std::to_string(port);
-            this->local_rpc_addr = hostname.substr(0, colon_pos + 1) +
+            this->local_rpc_addr = hostname + ":" +
                                    std::to_string(local_rpc_port);
+            LOG(INFO) << "local rpc addr: " << this->local_rpc_addr;
             auto client_opt = mooncake::Client::Create(
                 this->local_hostname, metadata_server, protocol, device_name,
                 master_server_addr, transfer_engine);
@@ -1496,6 +1499,7 @@ RealClient::batch_get_into_internal(const std::vector<std::string> &keys,
                                     const std::vector<void *> &buffers,
                                     const std::vector<size_t> &sizes) {
     auto start_time = std::chrono::steady_clock::now();
+    LOG(INFO) << "batch get into internal called";
     // Validate preconditions
     if (!client_) {
         LOG(ERROR) << "Client is not initialized";
@@ -2214,6 +2218,7 @@ tl::expected<QueryTaskResponse, ErrorCode> RealClient::query_task(
 tl::expected<BatchGetOffloadObjectResponse, ErrorCode>
 RealClient::batch_get_offload_object(const std::vector<std::string> &keys,
                                      const std::vector<int64_t> &sizes) {
+    LOG(INFO) << "batch_get_offload_object called";
     auto result = file_storage_->BatchGet(keys, sizes);
     if (!result) {
         LOG(ERROR) << "Batch get offload object failed,err_code = "

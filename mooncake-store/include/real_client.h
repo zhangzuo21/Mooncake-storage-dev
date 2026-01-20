@@ -360,7 +360,7 @@ class RealClient : public PyClient {
         const std::string &master_server_addr = "127.0.0.1:50051",
         const std::shared_ptr<TransferEngine> &transfer_engine = nullptr,
         const std::string &ipc_socket_path = "", int local_rpc_port = 50052,
-        bool enable_offload = false);
+        bool enable_offload = true);
 
     tl::expected<void, ErrorCode> initAll_internal(
         const std::string &protocol, const std::string &device_name,
