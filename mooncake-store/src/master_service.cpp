@@ -262,9 +262,11 @@ auto MasterService::UnmountSegment(const UUID& segment_id,
 
 auto MasterService::ExistKey(const std::string& key)
     -> tl::expected<bool, ErrorCode> {
+    LOG(INFO) << "[MasterService::ExistKey] key=" << key;
     MetadataAccessorRO accessor(this, key);
     if (!accessor.Exists()) {
-        VLOG(1) << "key=" << key << ", info=object_not_found";
+        LOG(INFO) << "[MasterService::ExistKey] key=" << key
+                  << ", result=not_found";
         return false;
     }
 
@@ -273,9 +275,13 @@ auto MasterService::ExistKey(const std::string& key)
         // Grant a lease to the object as it may be further used by the
         // client.
         metadata.GrantLease(default_kv_lease_ttl_, default_kv_soft_pin_ttl_);
+        LOG(INFO) << "[MasterService::ExistKey] key=" << key
+                  << ", result=found, has_completed_replica=true";
         return true;
     }
 
+    LOG(INFO) << "[MasterService::ExistKey] key=" << key
+              << ", result=found, has_completed_replica=false";
     return false;  // If no complete replica is found, return false
 }
 
